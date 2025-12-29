@@ -10,6 +10,7 @@ from comfy.model_base import ModelType, QwenImage
 from nunchaku.models.linear import SVDQW4A4Linear
 
 from ..models.qwenimage import NunchakuQwenImageTransformer2DModel
+import copy
 
 
 class NunchakuQwenImage(QwenImage):
@@ -43,6 +44,17 @@ class NunchakuQwenImage(QwenImage):
             model_config, model_type, device=device, unet_model=NunchakuQwenImageTransformer2DModel
         )
         self.memory_usage_factor_conds = ("ref_latents",)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "model_config":
+                setattr(result, k, v)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     def load_model_weights(self, sd: dict[str, torch.Tensor], unet_prefix: str = ""):
         """

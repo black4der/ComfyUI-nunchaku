@@ -14,6 +14,7 @@ from nunchaku import NunchakuQwenImageTransformer2DModel
 from nunchaku.caching.fbcache import cache_context, create_cache_context
 from nunchaku.lora.qwenimage.compose import compose_lora
 from nunchaku.utils import load_state_dict_in_safetensors
+import copy
 
 
 class ComfyQwenImageWrapper(nn.Module):
@@ -66,6 +67,17 @@ class ComfyQwenImageWrapper(nn.Module):
 
         self._prev_timestep = None  # for first-block cache
         self._cache_context = None
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "config":
+                setattr(result, k, v)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     def to_safely(self, device):
         """

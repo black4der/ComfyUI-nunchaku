@@ -224,14 +224,21 @@ class NunchakuQwenImageDiTLoader:
             )
 
         # Wrap transformer in ComfyQwenImageWrapper for LoRA support (Flux-style)
-        from ...models.qwenimage import NunchakuQwenImageTransformer2DModel
+        from nunchaku import NunchakuQwenImageTransformer2DModel
         from ...wrappers.qwenimage import ComfyQwenImageWrapper
 
-        if isinstance(model.model.diffusion_model, NunchakuQwenImageTransformer2DModel):
+        transformer = model.model.diffusion_model
+
+        # Robust check: allow either isinstance or name match to avoid reload issues
+        is_nunchaku = isinstance(transformer, NunchakuQwenImageTransformer2DModel)
+        if not is_nunchaku:
+            is_nunchaku = type(transformer).__name__ == "NunchakuQwenImageTransformer2DModel"
+
+        if is_nunchaku:
             # Only wrap if not already wrapped
-            if not isinstance(model.model.diffusion_model, ComfyQwenImageWrapper):
+            if not isinstance(transformer, ComfyQwenImageWrapper):
                 wrapper = ComfyQwenImageWrapper(
-                    model=model.model.diffusion_model, config=model.model.model_config.unet_config
+                    model=transformer, config=model.model.model_config.unet_config
                 )
                 model.model.diffusion_model = wrapper
                 logger.debug("Wrapped transformer in ComfyQwenImageWrapper for LoRA support")
